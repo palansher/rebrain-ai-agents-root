@@ -1,0 +1,75 @@
+# Правила проекта (Cline persistent instructions)
+
+## Рабочая директория
+
+- Работать ТОЛЬКО внутри: /home/vp/my/rebrain/rebrain-ai-agents/rebrain-ai-agents-hw04/cline
+- Не выходить за пределы этой папки. Не трогать файлы в других директориях workspace.
+
+## Стек и версии
+
+- Python 3.12 (уже запинен через `uv python pin 3.12`, файл `.python-version`).
+- Пакетный менеджер — ТОЛЬКО `uv`. Никаких `pip install`, `poetry`, `conda`.
+  - Добавление зависимости: `uv add <pkg>`
+  - Запуск: `uv run <cmd>`
+  - Синхронизация: `uv sync`
+- Форматтер и линтер — `ruff`. После КАЖДОГО изменения кода запускать:
+  - `uv run ruff format .`
+  - `uv run ruff check . --fix`
+  - Все замечания исправлять до перехода к следующему шагу.
+
+## Обязательные технологии
+
+- Воркер-хендлер — библиотека `FastStream` (декларативный подписчик, валидация сообщений через Pydantic).
+- NER — `SpaCy` с русскоязычной моделью `ru_core_news_sm` (загружать ОДИН раз при старте воркера, не на каждое сообщение).
+- Брокер — `Redis` (через Redis Streams, образ `redis:7-alpine` в docker-compose).
+- БД — `PostgreSQL` (образ `postgres:16-alpine` в docker-compose).
+- Очередь и БД поднимаются ТОЛЬКО через `docker-compose`. Никаких «ручных» локальных инсталляций в коде.
+- Монитор — `FastAPI` + `APScheduler` (AsyncIOScheduler) для периодического опроса каждые 5 минут.
+
+## Git репозиторий
+
+Создай или обнови .gitignore, указав там исключения на твоё усмотрение.
+
+## Секреты и конфигурация
+
+- Все параметры подключения (URL Redis, DSN Postgres, список RSS, интервал) — из `.env` через `pydantic-settings`.
+- НЕ хардкодить host/port/password в коде.
+- Файл `.env` НЕ добавлять в `.gitignore` (по требованию задания — секретов там нет, преподаватель должен видеть конфиг).
+- Обязательно создать `.env.example` с теми же ключами.
+
+## Структура проекта
+
+```
+cline/
+├── .clinerules
+├── TASK.md
+├── README.md
+├── docker-compose.yml
+├── .env
+├── .env.example
+├── pyproject.toml
+├── init.sql                 # инициализация схемы Postgres
+├── monitor/
+│   ├── Dockerfile
+│   ├── main.py              # FastAPI + APScheduler + /health, /refresh
+│   ├── rss.py               # парсинг RSS + дедупликация
+│   └── publisher.py         # публикация в Redis Stream
+├── worker/
+│   ├── Dockerfile
+│   ├── main.py              # FastStream subscriber
+│   ├── ner.py               # SpaCy-обёртка
+│   └── db.py                # запись в Postgres
+└── shared/
+    ├── config.py            # pydantic-settings
+    └── schemas.py           # Pydantic-модель сообщения
+```
+
+## Контракт сообщения (Redis Stream -> worker)
+
+JSON с полями (Pydantic-модель `NewsMessage` в `shared/schemas.py`):
+
+- `source: str`   — название агентства
+- `title: str`
+- `link: str`     — уникальный ключ дедупликации
+- `published_at: datetime`
+- `text: str`     — description или полный текст

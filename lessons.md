@@ -4,7 +4,7 @@
 
 - Создать tag
 
-`git tag lesson-1`
+`git tag lesson-02`
 
 - Отправьте теги на GitHub
 
