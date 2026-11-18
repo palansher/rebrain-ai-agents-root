@@ -1,0 +1,161 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "update": "notify",
+  "username": "VP",
+  "instructions": [
+    "AGENTS.md"
+  ],
+  "shell": "/bin/bash",
+  "default_agent": "plan",
+  "formatter": true,
+  "websearch": {
+    "provider": "random"
+  },
+  "permissions": [
+    {
+      "action": "shell",
+      "resource": "*",
+      "effect": "ask"
+    },
+    {
+      "action": "shell",
+      "resource": "uv *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "ruff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git status *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git diff *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git add *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git commit *",
+      "effect": "allow"
+    },
+    {
+      "action": "shell",
+      "resource": "git push *",
+      "effect": "deny"
+    },
+    {
+      "action": "read",
+      "resource": "*",
+      "effect": "allow"
+    },
+    {
+      "action": "read",
+      "resource": "*.env",
+      "effect": "ask"
+    },
+    {
+      // Default: anything outside the project is blocked.
+      "action": "external_directory",
+      "resource": "*",
+      "effect": "deny"
+    },
+    {
+      // Scratch dir for diagnostics; paired with the `edit` rule below.
+      "action": "external_directory",
+      "resource": "/tmp/opencode/*",
+      "effect": "allow"
+    },
+    {
+      // Reads outside the project stay read-only: writes need approval.
+      "action": "edit",
+      "resource": "/tmp/opencode/*",
+      "effect": "ask"
+    },
+
+    // --- Read-only shell allowlist -------------------------------------------
+    // Rule order matters: the last matching rule wins, so these exceptions must
+    // stay below the broad `shell: * -> ask` rule above.
+    // NOTE: patterns match the whole command string, and `*` can also swallow
+    // shell redirections. Keep this list to inspection commands only; anything
+    // destructive must stay behind `ask`.
+    { "action": "shell", "resource": "cd *", "effect": "allow" },
+    { "action": "shell", "resource": "pwd", "effect": "allow" },
+    { "action": "shell", "resource": "ls *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "git blame *", "effect": "allow" },
+    { "action": "shell", "resource": "git rev-parse *", "effect": "allow" },
+    { "action": "shell", "resource": "git remote -v", "effect": "allow" },
+    { "action": "shell", "resource": "curl *http://127.0.0.1:*", "effect": "allow" },
+    {
+      "action": "shell",
+      "resource": "curl *https://api.open-meteo.com/*",
+      "effect": "allow"
+    }
+  ],
+  "policies": [
+    // Hard denials: these never prompt and cannot be lifted by "Allow always".
+    { "action": "tool.use", "resource": "shell:git push*", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:rm -rf *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:rm -fr *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:rm -r *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:git reset --hard *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:git clean *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:sudo *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:dd *", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:mkfs *", "effect": "deny" },
+
+    // Protect environment files from shell redirection (writes and appends).
+    { "action": "tool.use", "resource": "shell:* > .env", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:* > .env.*", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:* >> .env", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:* >> .env.*", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:*>.env*", "effect": "deny" },
+    { "action": "tool.use", "resource": "shell:*>>.env*", "effect": "deny" }
+  ],
+  "agents": {
+    "plan": {
+      "mode": "primary",
+      "permissions": [
+        {
+          "action": "shell",
+          "resource": "git push *",
+          "effect": "deny"
+        }
+      ],
+    },
+    "build": {
+      "mode": "primary",
+      "permissions": [
+        {
+          "action": "shell",
+          "resource": "git push *",
+          "effect": "deny"
+        }
+      ]
+    }
+  },
+  "providers": {
+    "ollama": {
+      "name": "Ollama local",
+      "package": "@opencode/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3.6:27b-q4_K_M": {
+          "name": "qwen3.6:27b-q4_K_M"
+        }
+      }
+    }
+  }
+}

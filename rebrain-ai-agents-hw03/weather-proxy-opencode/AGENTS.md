@@ -1,0 +1,56 @@
+# Weather Proxy Service - Project Specs & Rules
+
+## Tech Stack & Constraints
+
+- **Language**: Python 3.12
+- **Package Manager**: UV + venv
+- **Linter & Formatter**: ruff
+- **Framework**: FastAPI
+- **HTTP Client**: httpx (AsyncClient)
+
+## Mandatory Development Rules
+
+1. Work strictly and exclusively inside the current repository directory ~/my/rebrain/rebrain-ai-agents/rebrain-ai-agents-hw03/weather-proxy-opencode
+2. Use exclusively the `.venv` virtual environment in the current project directory to avoid installing packages into global or external environments.
+3. Fix (pin) Python version to 3.12 ("~=3.12.0")
+4. Read app API documentaion at  https://open-meteo.com/en/docs
+5. Create .gitignore for the project
+6. After every single code modification, you must run `uv run ruff format` and `uv run ruff check --fix` and fix all warnings or errors.
+7. Fully populate the `README.md` file with clear installation, configuration, and local execution instructions (including curl examples).
+
+---
+
+## Service Specification & Requirements
+
+### 1. Configuration
+
+- Use `.env` or settings to store the base URL of the external Open-Meteo API (`https://open-meteo.com/en/docs`).
+
+### 2. Endpoints
+
+- **`GET /health`**
+  - Returns: `{"status": "ok"}`
+- **`GET /weather?latitude=41.7151&longitude=44.8271`**
+  - Proxies request to: `https://api.open-meteo.com/v1/forecast?latitude=41.7151&longitude=44.8271&current=temperature_2m,wind_speed_10m
+  ` using `httpx.AsyncClient`.
+  - Returns normalized JSON: `{"latitude": 41.7151, "longitude": 44.8271, "temperature": 28.4, "wind_speed": 12.1, "source": "open-meteo"}`
+- **`GET /forecast?latitude=41.7151&longitude=44.8271&days=3`**
+  - Returns the forecast for the specified number of days.
+
+### 3. Validation & Error Handling (Pydantic / FastAPI)
+
+- Validate input query parameters:
+  - `latitude`: from -90 to 90
+  - `longitude`: from -180 to 180
+  - `days`: from 1 to 7
+- Handle errors gracefully:
+  - External API unresponsiveness or timeouts including problem URLs reported
+  - Unexpected response formats
+  - Invalid user parameters (clear `4xx` responses)
+
+### 4. Application run
+
+Check that Application successfully can be run as:
+
+- `uv run uvicorn main:app --reload`
+- `uv run weather-proxy`
