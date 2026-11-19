@@ -1,0 +1,84 @@
+name: news-monitor
+
+services:
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-news}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-news}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  monitor:
+    build:
+      context: .
+      dockerfile: monitor/Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,::1,brg.loc,.brg.loc,vs-nexus02.brg.loc}
+        - UV_INDEX_URL=${UV_INDEX_URL:-http://vs-nexus02.brg.loc:8081/repository/pypi-proxy/simple}
+    env_file: .env
+    # Закомментировано — прокси по умолчанию НЕ используется.
+    # Раскомментируйте при необходимости; NO_PROXY гарантирует, что
+    # контейнеры общаются между собой и с корпоративным Nexus мимо прокси.
+    # environment:
+    #   HTTP_PROXY: ${HTTP_PROXY:-}
+    #   HTTPS_PROXY: ${HTTPS_PROXY:-}
+    #   NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,::1,brg.loc,.brg.loc,redis,postgres,monitor,worker,vs-nexus02.brg.loc}
+    ports:
+      - "8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: worker/Dockerfile
+      args:
+        - HTTP_PROXY=${HTTP_PROXY:-}
+        - HTTPS_PROXY=${HTTPS_PROXY:-}
+        - NO_PROXY=${NO_PROXY:-localhost,127.0.0.1,::1,brg.loc,.brg.loc,vs-nexus02.brg.loc}
+        - UV_INDEX_URL=${UV_INDEX_URL:-http://vs-nexus02.brg.loc:8081/repository/pypi-proxy/simple}
+    env_file: .env
+    # Закомментировано — прокси по умолчанию НЕ используется.
+    # environment:
+    #   HTTP_PROXY: ${HTTP_PROXY:-}
+    #   HTTPS_PROXY: ${HTTPS_PROXY:-}
+    #   NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,::1,brg.loc,.brg.loc,redis,postgres,monitor,worker,vs-nexus02.brg.loc}
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  pg_data:
