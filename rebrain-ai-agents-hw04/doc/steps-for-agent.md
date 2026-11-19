@@ -4,11 +4,9 @@
 
 ## Подготовительный промпт (отправь перед Шагом 1)
 
-```markdown
 Прочитай `.clinerules` и `TASK.md` целиком.
 Работаем только в `/home/vp/my/rebrain/rebrain-ai-agents/rebrain-ai-agents-hw04/cline`.
 Подтверди, что понял правила, архитектуру и контракт сообщения. Пока не пиши код — жди шаг 1.
-```
 
 ## Шаг 1. Скелет проекта + docker-compose (Plan mode)
 
@@ -39,7 +37,6 @@ docker-compose config
 
 ## Шаг 2. Monitor: парсинг RSS + дедупликация + публикация (Plan mode)
 
-```markdown
 Шаг 2:
 реализовать
 `monitor/main.py` (FastAPI + APScheduler с интервалом 5 минут),
@@ -48,7 +45,6 @@ docker-compose config
 
 Эндпоинты: `GET /health`, `POST /refresh`. `/refresh` возвращает `{"new_items": N}`.
 Покажи план, потом Act mode.
-```
 
 *Проверка:*
 
@@ -60,7 +56,6 @@ curl -X POST http://127.0.0.1:8000/refresh
 
 ## Шаг 3. Worker: FastStream subscriber + запись news в БД (Plan mode)
 
-```markdown
 Шаг 3:
 реализовать
 `worker/main.py` (FastStream подписчик на Redis Stream, consumer group),
@@ -68,7 +63,6 @@ curl -X POST http://127.0.0.1:8000/refresh
 
 NER пока не подключать — только запись новости.
 Покажи план, потом Act mode.
-```
 
 *Проверка:*
 
@@ -80,7 +74,6 @@ docker-compose exec postgres psql -U postgres -d news -c "SELECT id, source, tit
 
 ## Шаг 4. Worker: SpaCy NER + запись entities (Plan mode)
 
-```markdown
 Шаг 4:
 реализовать
 `worker/ner.py` — загрузка `ru_core_news_sm` ОДИН раз при старте (глобальная переменная/синглтон), функция извлечения сущностей из `title + text`, подсчёт `count` по (text, label).
@@ -91,7 +84,6 @@ docker-compose exec postgres psql -U postgres -d news -c "SELECT id, source, tit
 Обработка ошибок NER на одном сообщении — лог + continue.
 
 Покажи план, потом Act mode.
-```
 
 *Проверка:*
 
