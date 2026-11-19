@@ -10,7 +10,7 @@
 
 ## Mandatory Development Rules
 
-1. Work strictly and exclusively inside the current repository directory ~/my/rebrain/rebrain-ai-agents/rebrain-ai-agents-hw03/weather-proxy-opencode
+1. Work strictly and exclusively inside the current repository directory ~/my/rebrain/rebrain-ai-agents/rebrain-ai-agents-hw03/weather-proxy-cline
 2. Use exclusively the `.venv` virtual environment in the current project directory to avoid installing packages into global or external environments.
 3. Fix (pin) Python version to 3.12 ("~=3.12.0")
 4. Read app API documentaion at  https://open-meteo.com/en/docs
