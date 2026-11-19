@@ -32,6 +32,8 @@ flowchart TD
 - `postgres:16-alpine` — хранилище, схема инициализируется через `init.sql`.
 - `scripts/token_stats.py` — аналитика расхода токенов по режимам Plan/Act
   (результаты — в [models-analytics.md](models-analytics.md)).
+- [spacy-model.md](spacy-model.md) — где хранятся веса `ru_core_news_sm`
+  в образе, как они туда попадают и почему старт работает офлайн.
 
 ## Контракт сообщения (Redis Stream → worker)
 
