@@ -30,6 +30,8 @@ flowchart TD
 - `shared/` — общая конфигурация (`config.py`, pydantic-settings) и контракт сообщения (`schemas.py`, модель `NewsMessage`).
 - `redis:7-alpine` — брокер (Redis Streams + consumer group).
 - `postgres:16-alpine` — хранилище, схема инициализируется через `init.sql`.
+- `scripts/token_stats.py` — аналитика расхода токенов по режимам Plan/Act
+  (результаты — в [models-analytics.md](models-analytics.md)).
 
 ## Контракт сообщения (Redis Stream → worker)
 
@@ -160,12 +162,26 @@ curl -X POST http://127.0.0.1:8000/refresh   # через некоторое в�
 
 ### Plan/Act
 
-TODO: заполнить вручную.
+TODO: субъективные наблюдения заполнить вручную.
 
-### architect/editor
+Фактические данные по расходу токенов в Plan и Act (таблицы по режимам и
+моделям, методика подсчёта, оговорки и вывод о том, оправдало ли себя
+использование более дешёвой модели в Act Mode) вынесены в отдельный документ:
+**[models-analytics.md](models-analytics.md)**.
 
-TODO: заполнить вручную.
+### Скрипт аналитики токенов
 
-### Выводы
+`scripts/token_stats.py` читает файл сессии Cline
+(`~/.cline/data/sessions/<id>/<id>.messages.json`) и считает расход токенов
+с разбивкой по режимам (plan/act) и моделям. Использует только стандартную
+библиотеку, зависимостей проекта не требует.
 
-TODO: заполнить вручную.
+```bash
+uv run python scripts/token_stats.py                 # последняя сессия
+uv run python scripts/token_stats.py --all-sessions  # все сессии суммарно
+uv run python scripts/token_stats.py --session PATH  # конкретная сессия
+uv run python scripts/token_stats.py --json          # вывод в JSON
+```
+
+Считает: `requests`, `inputTokens`, `outputTokens`, `cacheReadTokens` и
+производные — ⌀ input/output на запрос, доля кэша, некэшированный вход.
